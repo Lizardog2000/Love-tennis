@@ -6,7 +6,10 @@
 <meta charset="UTF-8">
 
 <meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
+      content="width=device-width,
+               initial-scale=1.0,
+               maximum-scale=1.0,
+               user-scalable=no">
 
 <title>Heart Pong ❤️</title>
 
@@ -16,9 +19,14 @@
   box-sizing: border-box;
 }
 
+html,
 body {
-
   margin: 0;
+  padding: 0;
+
+  width: 100%;
+
+  min-height: 100%;
 
   background: #111;
 
@@ -29,12 +37,15 @@ body {
   text-align: center;
 }
 
+body {
+  overflow-x: hidden;
+}
+
 h1 {
-  margin: 15px;
+  margin: 15px 0;
 }
 
 button {
-
   padding: 12px 20px;
 
   margin: 6px;
@@ -51,7 +62,6 @@ button {
 }
 
 input {
-
   padding: 12px;
 
   border-radius: 8px;
@@ -69,13 +79,15 @@ input {
 
   position: relative;
 
-  width: 800px;
+  /*
+    КВАДРАТНОЕ ПОЛЕ
+  */
 
-  height: 500px;
+  width: min(96vw, 500px);
 
-  max-width: 100vw;
+  height: min(96vw, 500px);
 
-  margin: auto;
+  margin: 10px auto;
 
   background: #050505;
 
@@ -84,6 +96,8 @@ input {
   overflow: hidden;
 
   touch-action: none;
+
+  user-select: none;
 }
 
 .paddle {
@@ -126,9 +140,11 @@ input {
 
   transform: rotate(-45deg);
 
-  left: 17px;
+  left: 386px;
 
   top: 236px;
+
+  z-index: 5;
 }
 
 #ball::before,
@@ -170,20 +186,15 @@ input {
 }
 
 #roomInfo {
-
   margin: 10px;
 }
 
 #status {
-
   min-height: 20px;
 }
 
-
 #serveInfo {
-
-  font-size: 18px;
-
+  font-size: 17px;
   margin: 8px;
 }
 
@@ -225,7 +236,9 @@ input {
 
 </head>
 
+
 <body>
+
 
 <h1>❤️ Heart Pong</h1>
 
@@ -240,8 +253,7 @@ input {
 
   <input
     id="roomInput"
-    placeholder="Код комнаты"
-  >
+    placeholder="Код комнаты">
 
   <button onclick="joinRoom()">
     Войти
@@ -256,20 +268,26 @@ input {
 
 <div id="roomInfo"></div>
 
+
 <div id="score">
   0 : 0
 </div>
+
 
 <div id="serveInfo"></div>
 
 
 <div id="game">
 
-  <div id="paddle1"
-       class="paddle"></div>
+  <div
+    id="paddle1"
+    class="paddle">
+  </div>
 
-  <div id="paddle2"
-       class="paddle"></div>
+  <div
+    id="paddle2"
+    class="paddle">
+  </div>
 
   <div id="ball"></div>
 
@@ -291,15 +309,12 @@ input {
 
 <script>
 
-const socket = new WebSocket(
-
-  location.protocol === "https:"
-
-    ? "wss://" + location.host
-
-    : "ws://" + location.host
-
-);
+const socket =
+  new WebSocket(
+    location.protocol === "https:"
+      ? "wss://" + location.host
+      : "ws://" + location.host
+  );
 
 
 let myPlayer = null;
@@ -344,10 +359,6 @@ const finalScore =
   document.getElementById("finalScore");
 
 
-// =========================
-// ПОДКЛЮЧЕНИЕ
-// =========================
-
 socket.onopen = () => {
 
   const params =
@@ -364,12 +375,9 @@ socket.onopen = () => {
       "roomInput"
     ).value = room;
   }
+
 };
 
-
-// =========================
-// СООБЩЕНИЯ СЕРВЕРА
-// =========================
 
 socket.onmessage = event => {
 
@@ -378,6 +386,7 @@ socket.onmessage = event => {
 
 
   // КОМНАТА СОЗДАНА
+
   if (data.type === "roomCreated") {
 
     roomId = data.roomId;
@@ -401,6 +410,7 @@ socket.onmessage = event => {
 
 
   // ИГРА НАЧАЛАСЬ
+
   if (data.type === "start") {
 
     myPlayer = data.player;
@@ -424,6 +434,7 @@ socket.onmessage = event => {
 
 
   // ОШИБКА
+
   if (data.type === "error") {
 
     status.innerText =
@@ -433,7 +444,8 @@ socket.onmessage = event => {
   }
 
 
-  // СОСТОЯНИЕ
+  // СОСТОЯНИЕ ИГРЫ
+
   if (data.type === "state") {
 
     menu.style.display = "none";
@@ -441,23 +453,51 @@ socket.onmessage = event => {
     game.style.display = "block";
 
 
-    // Сердечко
+    /*
+      Сервер работает в координатах 800x500.
+
+      На экране поле квадратное.
+
+      Поэтому масштабируем отдельно
+      X и Y.
+    */
+
+    const rect =
+      game.getBoundingClientRect();
+
+
+    const scaleX =
+      rect.width / 800;
+
+    const scaleY =
+      rect.height / 500;
+
+
+    // СЕРДЕЧКО
+
     ball.style.left =
-      (data.ball.x - 14) + "px";
+      ((data.ball.x - 14) * scaleX)
+      + "px";
 
     ball.style.top =
-      (data.ball.y - 14) + "px";
+      ((data.ball.y - 14) * scaleY)
+      + "px";
 
 
-    // Ракетки
+    // ЛЕВАЯ РАКЕТКА
+
     paddle1.style.top =
-      (data.players[0] - 60) + "px";
+      ((data.players[0] - 60) * scaleY)
+      + "px";
+
+
+    // ПРАВАЯ РАКЕТКА
 
     paddle2.style.top =
-      (data.players[1] - 60) + "px";
+      ((data.players[1] - 60) * scaleY)
+      + "px";
 
 
-    // Счёт
     score.innerText =
       data.score[0] +
       " : " +
@@ -474,12 +514,14 @@ socket.onmessage = event => {
 
 
   // КОНЕЦ ИГРЫ
+
   if (data.type === "gameOver") {
 
     score.innerText =
       data.score[0] +
       " : " +
       data.score[1];
+
 
     finalScore.innerText =
       "Счёт: " +
@@ -509,6 +551,7 @@ socket.onmessage = event => {
 
 
   // НОВАЯ ИГРА
+
   if (data.type === "restart") {
 
     result.style.display =
@@ -528,9 +571,7 @@ socket.onmessage = event => {
 };
 
 
-// =========================
 // ТЕКСТ ПОДАЧИ
-// =========================
 
 function updateServeText(
   servingPlayer,
@@ -561,9 +602,7 @@ function updateServeText(
 }
 
 
-// =========================
 // СОЗДАТЬ КОМНАТУ
-// =========================
 
 function createRoom() {
 
@@ -576,9 +615,7 @@ function createRoom() {
 }
 
 
-// =========================
-// ВОЙТИ
-// =========================
+// ВОЙТИ В КОМНАТУ
 
 function joinRoom() {
 
@@ -604,9 +641,7 @@ function joinRoom() {
 }
 
 
-// =========================
 // ДВИЖЕНИЕ РАКЕТКИ
-// =========================
 
 function movePaddle(clientY) {
 
@@ -617,12 +652,20 @@ function movePaddle(clientY) {
     game.getBoundingClientRect();
 
 
-  const scale =
+  /*
+    Серверная высота = 500.
+
+    Переводим координату пальца
+    обратно в серверные координаты.
+  */
+
+  const scaleY =
     rect.height / 500;
 
 
   let y =
-    (clientY - rect.top) / scale;
+    (clientY - rect.top) /
+    scaleY;
 
 
   y = Math.max(
@@ -641,9 +684,7 @@ function movePaddle(clientY) {
 }
 
 
-// =========================
 // ПОДАЧА
-// =========================
 
 function serve() {
 
@@ -658,25 +699,7 @@ function serve() {
 }
 
 
-// =========================
-// МЫШЬ
-// =========================
-
-game.addEventListener(
-  "mousemove",
-  event => {
-
-    movePaddle(
-      event.clientY
-    );
-
-  }
-);
-
-
-// =========================
 // ТЕЛЕФОН
-// =========================
 
 game.addEventListener(
   "touchmove",
@@ -695,7 +718,6 @@ game.addEventListener(
 );
 
 
-// КАСАНИЕ ЭКРАНА = ПОДАЧА
 game.addEventListener(
   "touchstart",
   event => {
@@ -715,7 +737,20 @@ game.addEventListener(
 );
 
 
-// ПК: клик = подача
+// КОМПЬЮТЕР
+
+game.addEventListener(
+  "mousemove",
+  event => {
+
+    movePaddle(
+      event.clientY
+    );
+
+  }
+);
+
+
 game.addEventListener(
   "click",
   () => {
@@ -726,9 +761,7 @@ game.addEventListener(
 );
 
 
-// =========================
-// НОВЫЙ МАТЧ
-// =========================
+// НОВАЯ ИГРА
 
 function rematch() {
 
@@ -738,12 +771,11 @@ function rematch() {
     })
   );
 
-  resultText.innerText =
-    "Новая игра...";
-
 }
 
 </script>
 
+
 </body>
+
 </html>
