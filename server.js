@@ -10,49 +10,93 @@ app.use(express.static("public"));
 
 const PORT = process.env.PORT || 3000;
 
-// Игровое поле
-const WIDTH = 800;
+
+// ======================================================
+// ИГРОВОЕ ПОЛЕ — СТРОГО 500 x 500
+// ======================================================
+
+const WIDTH = 500;
 const HEIGHT = 500;
 
-// Ракетки
+
+// ======================================================
+// РАКЕТКИ
+// ======================================================
+
 const PADDLE_WIDTH = 18;
 const PADDLE_HEIGHT = 120;
+
 const PADDLE_MARGIN = 20;
 
-// Мяч
+
+// ======================================================
+// СЕРДЕЧКО
+// ======================================================
+
 const BALL_RADIUS = 14;
-const BALL_SPEED_X = 7;
-const BALL_SPEED_Y = 2.5;
+
+const BALL_SPEED_X = 6;
+const BALL_MAX_SPEED_Y = 6;
+
+
+// ======================================================
+// КОМНАТЫ
+// ======================================================
 
 const rooms = new Map();
+
+
+// ======================================================
+// ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ
+// ======================================================
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+
+// ======================================================
+// СОЗДАТЬ КОМНАТУ
+// ======================================================
+
 function createRoom() {
-  const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  const id = Math.random()
+    .toString(36)
+    .substring(2, 8)
+    .toUpperCase();
 
   const room = {
-    id: roomId,
 
+    id,
+
+    // Y — это ЦЕНТР ракетки
     players: [
       HEIGHT / 2,
       HEIGHT / 2
     ],
 
-    score: [0, 0],
+    score: [
+      0,
+      0
+    ],
 
-    gameOver: false,
-
+    // Кто подаёт
     servingPlayer: 0,
+
+    // Сколько подач уже сделал этот игрок
     servesDone: 0,
 
+    // Движется ли сердечко
     ballMoving: false,
 
+    // Закончена ли игра
+    gameOver: false,
+
     ball: {
-      x: PADDLE_MARGIN + PADDLE_WIDTH + BALL_RADIUS,
+      x: 0,
       y: HEIGHT / 2,
+
       vx: 0,
       vy: 0
     },
@@ -60,138 +104,270 @@ function createRoom() {
     clients: []
   };
 
-  rooms.set(roomId, room);
+  rooms.set(id, room);
+
+  putBallOnPaddle(room);
 
   return room;
 }
 
-function putBallOnPaddle(room) {
-  const player = room.servingPlayer;
 
-  const paddleY = room.players[player];
+// ======================================================
+// ПОСТАВИТЬ СЕРДЕЧКО ПЕРЕД РАКЕТКОЙ
+// ======================================================
+
+function putBallOnPaddle(room) {
+
+  const player =
+    room.servingPlayer;
+
+  const paddleY =
+    room.players[player];
 
   room.ball.y = paddleY;
 
+
+  // --------------------------------------
+  // ЛЕВАЯ РАКЕТКА
+  // --------------------------------------
+
   if (player === 0) {
-    // Левая ракетка:
-    // мяч стоит СПРАВА от неё
-    room.ball.x =
+
+    const paddleRight =
       PADDLE_MARGIN +
-      PADDLE_WIDTH +
-      BALL_RADIUS;
-  } else {
-    // Правая ракетка:
-    // мяч стоит СЛЕВА от неё
+      PADDLE_WIDTH;
+
     room.ball.x =
+      paddleRight +
+      BALL_RADIUS;
+
+  }
+
+
+  // --------------------------------------
+  // ПРАВАЯ РАКЕТКА
+  // --------------------------------------
+
+  else {
+
+    const paddleLeft =
       WIDTH -
       PADDLE_MARGIN -
-      PADDLE_WIDTH -
+      PADDLE_WIDTH;
+
+    room.ball.x =
+      paddleLeft -
       BALL_RADIUS;
   }
+
 
   room.ball.vx = 0;
   room.ball.vy = 0;
+
   room.ballMoving = false;
 }
 
-function startServe(room) {
-  if (room.gameOver || room.ballMoving) return;
 
-  const player = room.servingPlayer;
+// ======================================================
+// ПОДАЧА
+// ======================================================
+
+function serve(room) {
+
+  if (
+    room.gameOver ||
+    room.ballMoving
+  ) {
+    return;
+  }
+
+
+  // Левая ракетка → вправо
+  if (room.servingPlayer === 0) {
+
+    room.ball.vx =
+      BALL_SPEED_X;
+
+    room.ball.vy =
+      -2;
+
+  }
+
+
+  // Правая ракетка → влево
+  else {
+
+    room.ball.vx =
+      -BALL_SPEED_X;
+
+    room.ball.vy =
+      -2;
+  }
+
 
   room.ballMoving = true;
-
-  if (player === 0) {
-    // Левая ракетка отправляет мяч вправо
-    room.ball.vx = BALL_SPEED_X;
-    room.ball.vy = -BALL_SPEED_Y;
-  } else {
-    // Правая ракетка отправляет мяч влево
-    room.ball.vx = -BALL_SPEED_X;
-    room.ball.vy = -BALL_SPEED_Y;
-  }
 }
 
-function resetAfterPoint(room) {
+
+// ======================================================
+// ПОСЛЕ ОЧКА
+// ======================================================
+
+function afterPoint(room) {
+
   room.ballMoving = false;
 
   room.servesDone++;
 
-  // После двух подач подряд переходим к другому игроку
+
+  /*
+    Каждый игрок делает 2 подачи подряд.
+
+    После второй подачи
+    переходим к другому игроку.
+  */
+
   if (room.servesDone >= 2) {
+
     room.servesDone = 0;
-    room.servingPlayer = room.servingPlayer === 0 ? 1 : 0;
+
+    room.servingPlayer =
+      room.servingPlayer === 0
+        ? 1
+        : 0;
   }
 
-  // Ограничиваем ракетки
-  room.players[0] = clamp(
-    room.players[0],
-    PADDLE_HEIGHT / 2,
-    HEIGHT - PADDLE_HEIGHT / 2
-  );
 
-  room.players[1] = clamp(
-    room.players[1],
-    PADDLE_HEIGHT / 2,
-    HEIGHT - PADDLE_HEIGHT / 2
-  );
+  // Жёстко удерживаем обе ракетки внутри поля.
+
+  room.players[0] =
+    clamp(
+      room.players[0],
+      PADDLE_HEIGHT / 2,
+      HEIGHT - PADDLE_HEIGHT / 2
+    );
+
+  room.players[1] =
+    clamp(
+      room.players[1],
+      PADDLE_HEIGHT / 2,
+      HEIGHT - PADDLE_HEIGHT / 2
+    );
+
 
   putBallOnPaddle(room);
 }
 
+
+// ======================================================
+// ОТПРАВИТЬ СОСТОЯНИЕ ВСЕМ ИГРОКАМ
+// ======================================================
+
 function broadcast(room) {
-  const message = JSON.stringify({
+
+  const data = {
+
     type: "state",
 
     players: room.players,
 
     score: room.score,
 
-    servingPlayer: room.servingPlayer,
+    servingPlayer:
+      room.servingPlayer,
 
-    servesDone: room.servesDone,
+    servesDone:
+      room.servesDone,
 
-    ballMoving: room.ballMoving,
+    ballMoving:
+      room.ballMoving,
 
     ball: room.ball,
 
-    gameOver: room.gameOver
-  });
+    gameOver:
+      room.gameOver
+  };
 
-  room.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
+
+  const message =
+    JSON.stringify(data);
+
+
+  room.clients.forEach(
+    client => {
+
+      if (
+        client.readyState ===
+        WebSocket.OPEN
+      ) {
+
+        client.send(message);
+
+      }
+
     }
-  });
+  );
 }
 
-function finishGame(room, winner) {
+
+// ======================================================
+// ЗАКОНЧИТЬ ИГРУ
+// ======================================================
+
+function endGame(room, winner) {
+
   room.gameOver = true;
+
   room.ballMoving = false;
 
-  const message = JSON.stringify({
-    type: "gameOver",
-    winner,
-    score: room.score
-  });
 
-  room.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
+  room.clients.forEach(
+    client => {
+
+      if (
+        client.readyState ===
+        WebSocket.OPEN
+      ) {
+
+        client.send(
+          JSON.stringify({
+            type: "gameOver",
+
+            winner,
+
+            score: room.score
+          })
+        );
+
+      }
+
     }
-  });
+  );
 }
 
-function resetGame(room) {
-  room.players[0] = HEIGHT / 2;
-  room.players[1] = HEIGHT / 2;
 
-  room.score = [0, 0];
+// ======================================================
+// НОВАЯ ИГРА
+// ======================================================
 
-  room.gameOver = false;
+function restartGame(room) {
+
+  room.players[0] =
+    HEIGHT / 2;
+
+  room.players[1] =
+    HEIGHT / 2;
+
+  room.score = [
+    0,
+    0
+  ];
 
   room.servingPlayer = 0;
+
   room.servesDone = 0;
+
+  room.gameOver = false;
 
   room.ballMoving = false;
 
@@ -200,373 +376,129 @@ function resetGame(room) {
   broadcast(room);
 }
 
+
+// ======================================================
+// ПРОВЕРКА СТОЛКНОВЕНИЯ
+// ======================================================
+
+function ballHitsPaddle(
+  previousX,
+  currentX,
+  ballY,
+  paddleLeft,
+  paddleRight,
+  paddleTop,
+  paddleBottom,
+  direction
+) {
+
+  const verticalHit =
+    ballY + BALL_RADIUS >= paddleTop &&
+    ballY - BALL_RADIUS <= paddleBottom;
+
+
+  if (!verticalHit) {
+    return false;
+  }
+
+
+  // Мяч летит вправо
+  if (direction === "right") {
+
+    return (
+      previousX + BALL_RADIUS <
+        paddleLeft &&
+      currentX + BALL_RADIUS >=
+        paddleLeft
+    );
+  }
+
+
+  // Мяч летит влево
+  return (
+    previousX - BALL_RADIUS >
+      paddleRight &&
+    currentX - BALL_RADIUS <=
+      paddleRight
+  );
+}
+
+
+// ======================================================
+// ИГРОВОЙ ЦИКЛ
+// ======================================================
+
 function gameLoop() {
-  rooms.forEach((room) => {
-    if (!room.ballMoving || room.gameOver) {
+
+  rooms.forEach(room => {
+
+    if (
+      !room.ballMoving ||
+      room.gameOver
+    ) {
       return;
     }
 
-    const ball = room.ball;
 
-    const previousX = ball.x;
-    const previousY = ball.y;
+    const ball =
+      room.ball;
+
+
+    const previousX =
+      ball.x;
+
+
+    // --------------------------------------
+    // Двигаем сердечко
+    // --------------------------------------
 
     ball.x += ball.vx;
     ball.y += ball.vy;
 
-    // Верхняя граница
-    if (ball.y - BALL_RADIUS <= 0) {
-      ball.y = BALL_RADIUS;
-      ball.vy = Math.abs(ball.vy);
+
+    // --------------------------------------
+    // ВЕРХ
+    // --------------------------------------
+
+    if (
+      ball.y - BALL_RADIUS <= 0
+    ) {
+
+      ball.y =
+        BALL_RADIUS;
+
+      ball.vy =
+        Math.abs(ball.vy);
     }
 
-    // Нижняя граница
-    if (ball.y + BALL_RADIUS >= HEIGHT) {
-      ball.y = HEIGHT - BALL_RADIUS;
-      ball.vy = -Math.abs(ball.vy);
+
+    // --------------------------------------
+    // НИЗ
+    // --------------------------------------
+
+    if (
+      ball.y + BALL_RADIUS >= HEIGHT
+    ) {
+
+      ball.y =
+        HEIGHT -
+        BALL_RADIUS;
+
+      ball.vy =
+        -Math.abs(ball.vy);
     }
 
-    // -----------------------------------
-    // Левая ракетка
-    // -----------------------------------
 
-    const leftPaddleTop =
-      room.players[0] - PADDLE_HEIGHT / 2;
-
-    const leftPaddleBottom =
-      room.players[0] + PADDLE_HEIGHT / 2;
+    // ==================================================
+    // ЛЕВАЯ РАКЕТКА
+    // ==================================================
 
     const leftPaddleLeft =
       PADDLE_MARGIN;
 
     const leftPaddleRight =
-      PADDLE_MARGIN + PADDLE_WIDTH;
-
-    const hitLeft =
-      ball.vx < 0 &&
-      ball.x - BALL_RADIUS <= leftPaddleRight &&
-      ball.x + BALL_RADIUS >= leftPaddleLeft &&
-      ball.y + BALL_RADIUS >= leftPaddleTop &&
-      ball.y - BALL_RADIUS <= leftPaddleBottom;
-
-    if (hitLeft) {
-      ball.x = leftPaddleRight + BALL_RADIUS + 1;
-
-      ball.vx = Math.abs(ball.vx);
-
-      // Добавляем направление в зависимости от точки удара
-      const difference =
-        ball.y - room.players[0];
-
-      ball.vy =
-        difference * 0.08;
-
-      if (Math.abs(ball.vy) < 1) {
-        ball.vy = ball.vy < 0 ? -1 : 1;
-      }
-    }
-
-    // -----------------------------------
-    // Правая ракетка
-    // -----------------------------------
-
-    const rightPaddleRight =
-      WIDTH - PADDLE_MARGIN;
-
-    const rightPaddleLeft =
-      rightPaddleRight - PADDLE_WIDTH;
-
-    const rightPaddleTop =
-      room.players[1] - PADDLE_HEIGHT / 2;
-
-    const rightPaddleBottom =
-      room.players[1] + PADDLE_HEIGHT / 2;
-
-    const hitRight =
-      ball.vx > 0 &&
-      ball.x + BALL_RADIUS >= rightPaddleLeft &&
-      ball.x - BALL_RADIUS <= rightPaddleRight &&
-      ball.y + BALL_RADIUS >= rightPaddleTop &&
-      ball.y - BALL_RADIUS <= rightPaddleBottom;
-
-    if (hitRight) {
-      // ВАЖНО:
-      // мяч принудительно ставим СЛЕВА от правой ракетки,
-      // чтобы он не оказался внутри неё.
-      ball.x =
-        rightPaddleLeft -
-        BALL_RADIUS -
-        1;
-
-      ball.vx = -Math.abs(ball.vx);
-
-      const difference =
-        ball.y - room.players[1];
-
-      ball.vy =
-        difference * 0.08;
-
-      if (Math.abs(ball.vy) < 1) {
-        ball.vy = ball.vy < 0 ? -1 : 1;
-      }
-    }
-
-    // -----------------------------------
-    // Гол слева
-    // -----------------------------------
-
-    if (ball.x + BALL_RADIUS < 0) {
-      room.score[1]++;
-
-      if (room.score[1] >= 11) {
-        finishGame(room, 1);
-        return;
-      }
-
-      resetAfterPoint(room);
-    }
-
-    // -----------------------------------
-    // Гол справа
-    // -----------------------------------
-
-    if (ball.x - BALL_RADIUS > WIDTH) {
-      room.score[0]++;
-
-      if (room.score[0] >= 11) {
-        finishGame(room, 0);
-        return;
-      }
-
-      resetAfterPoint(room);
-    }
-
-    // -----------------------------------
-    // Дополнительная защита:
-    // мяч не может оказаться внутри
-    // правой ракетки после столкновения
-    // -----------------------------------
-
-    if (
-      ball.vx < 0 &&
-      ball.x + BALL_RADIUS > rightPaddleLeft &&
-      ball.x - BALL_RADIUS < rightPaddleRight &&
-      ball.y + BALL_RADIUS >= rightPaddleTop &&
-      ball.y - BALL_RADIUS <= rightPaddleBottom
-    ) {
-      ball.x =
-        rightPaddleLeft -
-        BALL_RADIUS -
-        1;
-
-      ball.vx = -Math.abs(ball.vx);
-    }
-
-    // Защита для левой ракетки
-    if (
-      ball.vx > 0 &&
-      ball.x - BALL_RADIUS < leftPaddleRight &&
-      ball.x + BALL_RADIUS > leftPaddleLeft &&
-      ball.y + BALL_RADIUS >= leftPaddleTop &&
-      ball.y - BALL_RADIUS <= leftPaddleBottom
-    ) {
-      ball.x =
-        leftPaddleRight +
-        BALL_RADIUS +
-        1;
-
-      ball.vx = Math.abs(ball.vx);
-    }
-
-    broadcast(room);
-  });
-}
-
-setInterval(gameLoop, 1000 / 60);
-
-// -----------------------------------
-// WebSocket
-// -----------------------------------
-
-wss.on("connection", (ws) => {
-  let currentRoom = null;
-  let playerIndex = null;
-
-  ws.on("message", (message) => {
-    try {
-      const data = JSON.parse(message);
-
-      // Создание комнаты
-      if (data.type === "create") {
-        const room = createRoom();
-
-        room.clients.push(ws);
-
-        currentRoom = room;
-        playerIndex = 0;
-
-        putBallOnPaddle(room);
-
-        ws.send(
-          JSON.stringify({
-            type: "created",
-            room: room.id,
-            player: 0
-          })
-        );
-
-        broadcast(room);
-
-        return;
-      }
-
-      // Вход в комнату
-      if (data.type === "join") {
-        const room = rooms.get(
-          String(data.room).toUpperCase()
-        );
-
-        if (!room) {
-          ws.send(
-            JSON.stringify({
-              type: "error",
-              message: "Комната не найдена"
-            })
-          );
-
-          return;
-        }
-
-        if (room.clients.length >= 2) {
-          ws.send(
-            JSON.stringify({
-              type: "error",
-              message: "Комната уже заполнена"
-            })
-          );
-
-          return;
-        }
-
-        room.clients.push(ws);
-
-        currentRoom = room;
-        playerIndex = 1;
-
-        ws.send(
-          JSON.stringify({
-            type: "joined",
-            room: room.id,
-            player: 1
-          })
-        );
-
-        putBallOnPaddle(room);
-
-        broadcast(room);
-
-        return;
-      }
-
-      // Движение ракетки
-      if (data.type === "move") {
-        if (!currentRoom || playerIndex === null) {
-          return;
-        }
-
-        let y = Number(data.y);
-
-        if (!Number.isFinite(y)) {
-          return;
-        }
-
-        // НЕЛЬЗЯ дать ракетке выйти
-        // за верхнюю или нижнюю границу.
-        const minY = PADDLE_HEIGHT / 2;
-        const maxY =
-          HEIGHT - PADDLE_HEIGHT / 2;
-
-        y = clamp(y, minY, maxY);
-
-        currentRoom.players[playerIndex] = y;
-
-        // Если игрок сейчас подаёт,
-        // мяч должен двигаться вместе с ракеткой.
-        if (
-          !currentRoom.ballMoving &&
-          currentRoom.servingPlayer === playerIndex
-        ) {
-          currentRoom.ball.y = y;
-
-          if (playerIndex === 0) {
-            currentRoom.ball.x =
-              PADDLE_MARGIN +
-              PADDLE_WIDTH +
-              BALL_RADIUS;
-          } else {
-            currentRoom.ball.x =
-              WIDTH -
-              PADDLE_MARGIN -
-              PADDLE_WIDTH -
-              BALL_RADIUS;
-          }
-        }
-
-        broadcast(currentRoom);
-
-        return;
-      }
-
-      // Подача
-      if (data.type === "serve") {
-        if (!currentRoom || playerIndex === null) {
-          return;
-        }
-
-        if (
-          currentRoom.servingPlayer !== playerIndex
-        ) {
-          return;
-        }
-
-        startServe(currentRoom);
-
-        broadcast(currentRoom);
-
-        return;
-      }
-
-      // Новая игра
-      if (data.type === "rematch") {
-        if (!currentRoom) {
-          return;
-        }
-
-        resetGame(currentRoom);
-
-        return;
-      }
-    } catch (error) {
-      console.log("Ошибка сообщения:", error);
-    }
-  });
-
-  ws.on("close", () => {
-    if (!currentRoom) {
-      return;
-    }
-
-    currentRoom.clients =
-      currentRoom.clients.filter(
-        (client) => client !== ws
-      );
-
-    if (currentRoom.clients.length === 0) {
-      rooms.delete(currentRoom.id);
-    }
-  });
-});
-
-server.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
-});
+      PADDLE_MARGIN +
+      PADDLE_WIDTH;
+
+    const leftPaddleTop =
+      room.players[0]
