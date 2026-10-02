@@ -1,781 +1,961 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  >
+
+  <title>Любовный Pong</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #menu {
+      width: 92%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 25px;
+      font-size: 30px;
+    }
+
+    button,
+    input {
+      width: 100%;
+      height: 50px;
+      margin-top: 12px;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+    }
+
+    button {
+      background: white;
+      color: black;
+      font-weight: bold;
+    }
+
+    input {
+      padding: 0 15px;
+      text-align: center;
+    }
+
+    #gameScreen {
+      display: none;
+      width: 100%;
+      height: 100vh;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #top {
+      width: min(96vw, 500px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    #score {
+      font-size: 30px;
+    }
+
+    #serveInfo {
+      font-size: 14px;
+      opacity: 0.8;
+      text-align: center;
+    }
+
+    /*
+      КВАДРАТНОЕ ПОЛЕ
+    */
+    #game {
+      position: relative;
+
+      width: min(96vw, 500px);
+      height: min(96vw, 500px);
 
-<meta charset="UTF-8">
+      max-width: 500px;
+      max-height: 500px;
 
-<meta name="viewport"
-      content="width=device-width,
-               initial-scale=1.0,
-               maximum-scale=1.0,
-               user-scalable=no">
+      background: #050505;
 
-<title>Heart Pong ❤️</title>
+      border: 2px solid white;
+      border-radius: 8px;
 
-<style>
+      overflow: hidden;
 
-* {
-  box-sizing: border-box;
-}
+      touch-action: none;
+    }
 
-html,
-body {
-  margin: 0;
-  padding: 0;
+    /*
+      Левая ракетка
+    */
+    .paddle {
+      position: absolute;
 
-  width: 100%;
+      width: 18px;
+      height: 120px;
 
-  min-height: 100%;
+      top: 190px;
 
-  background: #111;
+      background: white;
 
-  color: white;
+      border-radius: 9px;
 
-  font-family: Arial, sans-serif;
+      z-index: 5;
+    }
 
-  text-align: center;
-}
+    #paddle1 {
+      left: 20px;
+    }
 
-body {
-  overflow-x: hidden;
-}
+    /*
+      Правая ракетка
+    */
+    #paddle2 {
+      right: 20px;
+    }
 
-h1 {
-  margin: 15px 0;
-}
+    /*
+      Сердечко
+    */
+    #ball {
+      position: absolute;
 
-button {
-  padding: 12px 20px;
+      width: 28px;
+      height: 28px;
 
-  margin: 6px;
+      z-index: 10;
 
-  border: none;
+      transform: rotate(-45deg);
 
-  border-radius: 10px;
+      background: #ff4d6d;
 
-  background: #ff4f81;
+      border-radius: 50% 0 50% 50%;
+    }
 
-  color: white;
+    #ball::before,
+    #ball::after {
+      content: "";
 
-  font-size: 16px;
-}
+      position: absolute;
 
-input {
-  padding: 12px;
+      width: 28px;
+      height: 28px;
 
-  border-radius: 8px;
+      background: #ff4d6d;
 
-  border: none;
+      border-radius: 50%;
+    }
 
-  font-size: 16px;
+    #ball::before {
+      top: -14px;
+      left: 0;
+    }
 
-  width: 220px;
-}
+    #ball::after {
+      top: 0;
+      left: 14px;
+    }
 
-#game {
+    #message {
+      position: absolute;
 
-  display: none;
+      left: 0;
+      top: 0;
 
-  position: relative;
+      width: 100%;
+      height: 100%;
 
-  /*
-    КВАДРАТНОЕ ПОЛЕ
-  */
+      display: none;
 
-  width: min(96vw, 500px);
+      background: rgba(0, 0, 0, 0.85);
 
-  height: min(96vw, 500px);
+      align-items: center;
+      justify-content: center;
 
-  margin: 10px auto;
+      flex-direction: column;
 
-  background: #050505;
+      text-align: center;
 
-  border: 3px solid white;
+      padding: 25px;
 
-  overflow: hidden;
+      z-index: 50;
+    }
 
-  touch-action: none;
+    #messageText {
+      font-size: 28px;
+      line-height: 1.3;
+      margin-bottom: 20px;
+    }
 
-  user-select: none;
-}
+    #restart {
+      width: 220px;
+    }
 
-.paddle {
-
-  position: absolute;
-
-  width: 16px;
-
-  height: 120px;
-
-  background: white;
-
-  border-radius: 10px;
-}
-
-#paddle1 {
-
-  left: 15px;
-
-  top: 190px;
-}
-
-#paddle2 {
-
-  right: 15px;
-
-  top: 190px;
-}
-
-
-#ball {
-
-  position: absolute;
-
-  width: 28px;
-
-  height: 28px;
-
-  background: #ff4f81;
-
-  transform: rotate(-45deg);
-
-  left: 386px;
-
-  top: 236px;
-
-  z-index: 5;
-}
-
-#ball::before,
-#ball::after {
-
-  content: "";
-
-  position: absolute;
-
-  width: 28px;
-
-  height: 28px;
-
-  background: #ff4f81;
-
-  border-radius: 50%;
-}
-
-#ball::before {
-
-  top: -14px;
-
-  left: 0;
-}
-
-#ball::after {
-
-  top: 0;
-
-  left: 14px;
-}
-
-
-#score {
-
-  font-size: 28px;
-
-  margin: 10px;
-}
-
-#roomInfo {
-  margin: 10px;
-}
-
-#status {
-  min-height: 20px;
-}
-
-#serveInfo {
-  font-size: 17px;
-  margin: 8px;
-}
-
-
-#result {
-
-  display: none;
-
-  position: absolute;
-
-  inset: 0;
-
-  background: rgba(0,0,0,0.9);
-
-  z-index: 10;
-
-  align-items: center;
-
-  justify-content: center;
-
-  flex-direction: column;
-}
-
-#resultText {
-
-  font-size: 30px;
-
-  font-weight: bold;
-
-  padding: 20px;
-}
-
-#finalScore {
-
-  font-size: 24px;
-}
-
-</style>
-
+    #roomText {
+      margin-top: 10px;
+      font-size: 16px;
+      opacity: 0.8;
+    }
+  </style>
 </head>
-
 
 <body>
 
+  <!-- МЕНЮ -->
 
-<h1>❤️ Heart Pong</h1>
+  <div id="menu">
 
+    <h1>💕 Любовный Pong 💕</h1>
 
-<div id="menu">
+    <button id="createBtn">
+      Создать игру
+    </button>
 
-  <button onclick="createRoom()">
-    Создать игру
-  </button>
+    <input
+      id="roomInput"
+      placeholder="Код комнаты"
+      autocomplete="off"
+    >
 
-  <br>
-
-  <input
-    id="roomInput"
-    placeholder="Код комнаты">
-
-  <button onclick="joinRoom()">
-    Войти
-  </button>
-
-  <p id="status">
-    Создай комнату или введи код друга
-  </p>
-
-</div>
-
-
-<div id="roomInfo"></div>
-
-
-<div id="score">
-  0 : 0
-</div>
-
-
-<div id="serveInfo"></div>
-
-
-<div id="game">
-
-  <div
-    id="paddle1"
-    class="paddle">
-  </div>
-
-  <div
-    id="paddle2"
-    class="paddle">
-  </div>
-
-  <div id="ball"></div>
-
-
-  <div id="result">
-
-    <div id="resultText"></div>
-
-    <div id="finalScore"></div>
-
-    <button onclick="rematch()">
-      Играть снова ❤️
+    <button id="joinBtn">
+      Войти в игру
     </button>
 
   </div>
 
-</div>
+
+  <!-- ИГРА -->
+
+  <div id="gameScreen">
+
+    <div id="top">
+
+      <div id="score">
+        0 : 0
+      </div>
+
+      <div id="serveInfo">
+        Подача
+      </div>
+
+      <div id="roomText">
+        —
+      </div>
+
+    </div>
 
 
-<script>
+    <div id="game">
 
-const socket =
-  new WebSocket(
-    location.protocol === "https:"
-      ? "wss://" + location.host
-      : "ws://" + location.host
-  );
+      <div
+        id="paddle1"
+        class="paddle"
+      ></div>
 
+      <div
+        id="paddle2"
+        class="paddle"
+      ></div>
 
-let myPlayer = null;
-
-let roomId = null;
-
-
-const menu =
-  document.getElementById("menu");
-
-const game =
-  document.getElementById("game");
-
-const ball =
-  document.getElementById("ball");
-
-const paddle1 =
-  document.getElementById("paddle1");
-
-const paddle2 =
-  document.getElementById("paddle2");
-
-const score =
-  document.getElementById("score");
-
-const status =
-  document.getElementById("status");
-
-const roomInfo =
-  document.getElementById("roomInfo");
-
-const serveInfo =
-  document.getElementById("serveInfo");
-
-const result =
-  document.getElementById("result");
-
-const resultText =
-  document.getElementById("resultText");
-
-const finalScore =
-  document.getElementById("finalScore");
+      <div id="ball"></div>
 
 
-socket.onopen = () => {
+      <div id="message">
 
-  const params =
-    new URLSearchParams(
-      location.search
-    );
+        <div id="messageText"></div>
 
-  const room =
-    params.get("room");
+        <button id="restart">
+          Играть снова
+        </button>
 
-  if (room) {
+      </div>
 
-    document.getElementById(
-      "roomInput"
-    ).value = room;
-  }
+    </div>
 
-};
+  </div>
 
 
-socket.onmessage = event => {
+  <script>
 
-  const data =
-    JSON.parse(event.data);
+    const menu =
+      document.getElementById("menu");
 
+    const gameScreen =
+      document.getElementById("gameScreen");
 
-  // КОМНАТА СОЗДАНА
+    const createBtn =
+      document.getElementById("createBtn");
 
-  if (data.type === "roomCreated") {
+    const joinBtn =
+      document.getElementById("joinBtn");
 
-    roomId = data.roomId;
+    const roomInput =
+      document.getElementById("roomInput");
 
-    myPlayer = data.player;
+    const roomText =
+      document.getElementById("roomText");
 
-    roomInfo.innerText =
-      "Код комнаты: " + roomId;
+    const score =
+      document.getElementById("score");
 
-    status.innerText =
-      "Отправь код другу ❤️";
+    const serveInfo =
+      document.getElementById("serveInfo");
 
-    history.replaceState(
-      null,
-      "",
-      "?room=" + roomId
-    );
+    const game =
+      document.getElementById("game");
 
-    return;
-  }
+    const paddle1 =
+      document.getElementById("paddle1");
 
+    const paddle2 =
+      document.getElementById("paddle2");
 
-  // ИГРА НАЧАЛАСЬ
+    const ball =
+      document.getElementById("ball");
 
-  if (data.type === "start") {
+    const message =
+      document.getElementById("message");
 
-    myPlayer = data.player;
+    const messageText =
+      document.getElementById("messageText");
 
-    menu.style.display = "none";
-
-    game.style.display = "block";
-
-    score.innerText =
-      data.score[0] +
-      " : " +
-      data.score[1];
-
-    updateServeText(
-      data.servingPlayer,
-      false
-    );
-
-    return;
-  }
+    const restart =
+      document.getElementById("restart");
 
 
-  // ОШИБКА
+    let ws = null;
 
-  if (data.type === "error") {
+    let myPlayer = null;
 
-    status.innerText =
-      data.message;
-
-    return;
-  }
-
-
-  // СОСТОЯНИЕ ИГРЫ
-
-  if (data.type === "state") {
-
-    menu.style.display = "none";
-
-    game.style.display = "block";
+    let roomId = null;
 
 
     /*
-      Сервер работает в координатах 800x500.
-
-      На экране поле квадратное.
-
-      Поэтому масштабируем отдельно
-      X и Y.
+      Реальные размеры игровой физики сервера
     */
+    const SERVER_WIDTH = 800;
+    const SERVER_HEIGHT = 500;
 
-    const rect =
-      game.getBoundingClientRect();
+    const PADDLE_HEIGHT = 120;
 
+    const PADDLE_MARGIN = 20;
 
-    const scaleX =
-      rect.width / 800;
+    const PADDLE_WIDTH = 18;
 
-    const scaleY =
-      rect.height / 500;
-
-
-    // СЕРДЕЧКО
-
-    ball.style.left =
-      ((data.ball.x - 14) * scaleX)
-      + "px";
-
-    ball.style.top =
-      ((data.ball.y - 14) * scaleY)
-      + "px";
+    const BALL_RADIUS = 14;
 
 
-    // ЛЕВАЯ РАКЕТКА
+    function connect() {
 
-    paddle1.style.top =
-      ((data.players[0] - 60) * scaleY)
-      + "px";
+      const protocol =
+        location.protocol === "https:"
+          ? "wss:"
+          : "ws:";
 
-
-    // ПРАВАЯ РАКЕТКА
-
-    paddle2.style.top =
-      ((data.players[1] - 60) * scaleY)
-      + "px";
-
-
-    score.innerText =
-      data.score[0] +
-      " : " +
-      data.score[1];
+      ws = new WebSocket(
+        protocol +
+        "//" +
+        location.host
+      );
 
 
-    updateServeText(
-      data.servingPlayer,
-      data.ballMoving
-    );
-
-    return;
-  }
+      ws.onopen = () => {
+        console.log("WebSocket connected");
+      };
 
 
-  // КОНЕЦ ИГРЫ
+      ws.onmessage = (event) => {
 
-  if (data.type === "gameOver") {
-
-    score.innerText =
-      data.score[0] +
-      " : " +
-      data.score[1];
+        const data =
+          JSON.parse(event.data);
 
 
-    finalScore.innerText =
-      "Счёт: " +
-      data.score[0] +
-      " : " +
-      data.score[1];
+        /*
+          Создали комнату
+        */
+
+        if (data.type === "created") {
+
+          roomId = data.room;
+          myPlayer = data.player;
+
+          roomText.textContent =
+            "Комната: " + roomId;
+
+          showGame();
+
+          return;
+        }
 
 
-    if (data.winner === myPlayer) {
+        /*
+          Вошли в комнату
+        */
 
-      resultText.innerText =
-        "Поздравляю любимка!";
+        if (data.type === "joined") {
 
-    } else {
+          roomId = data.room;
+          myPlayer = data.player;
 
-      resultText.innerText =
-        "В следующий раз обязательно получится!";
+          roomText.textContent =
+            "Комната: " + roomId;
+
+          showGame();
+
+          return;
+        }
+
+
+        /*
+          Ошибка
+        */
+
+        if (data.type === "error") {
+
+          alert(data.message);
+
+          return;
+        }
+
+
+        /*
+          Состояние игры
+        */
+
+        if (data.type === "state") {
+
+          updateGame(data);
+
+          return;
+        }
+
+
+        /*
+          Конец игры
+        */
+
+        if (data.type === "gameOver") {
+
+          message.style.display =
+            "flex";
+
+          if (data.winner === myPlayer) {
+
+            messageText.textContent =
+              "Поздравляю любимка! 💕";
+
+          } else {
+
+            messageText.textContent =
+              "В следующий раз обязательно получится! 💕";
+
+          }
+
+          return;
+        }
+
+      };
+
+
+      ws.onclose = () => {
+
+        console.log(
+          "WebSocket disconnected"
+        );
+
+      };
 
     }
 
 
-    result.style.display =
-      "flex";
+    function showGame() {
 
-    return;
-  }
+      menu.style.display =
+        "none";
+
+      gameScreen.style.display =
+        "flex";
+
+    }
 
 
-  // НОВАЯ ИГРА
+    /*
+      Перевод серверных координат
+      в квадратное визуальное поле.
+    */
 
-  if (data.type === "restart") {
+    function updateGame(data) {
 
-    result.style.display =
-      "none";
+      /*
+        ВАЖНО:
 
-    score.innerText =
-      "0 : 0";
+        Мы берём реальные размеры
+        квадратного поля.
 
-    updateServeText(
-      data.servingPlayer,
-      false
+        Сервер всё ещё использует
+        координаты 800 x 500.
+      */
+
+      const rect =
+        game.getBoundingClientRect();
+
+
+      const scaleX =
+        rect.width / SERVER_WIDTH;
+
+      const scaleY =
+        rect.height / SERVER_HEIGHT;
+
+
+      /*
+        Счёт
+      */
+
+      score.textContent =
+        data.score[0] +
+        " : " +
+        data.score[1];
+
+
+      /*
+        Левая ракетка
+
+        Центр ракетки находится
+        в data.players[0].
+      */
+
+      const leftY =
+        data.players[0] *
+        scaleY;
+
+      paddle1.style.top =
+        (leftY -
+        PADDLE_HEIGHT * scaleY / 2) +
+        "px";
+
+
+      /*
+        Правая ракетка
+
+        Центр ракетки находится
+        в data.players[1].
+
+        Ограничение здесь тоже есть,
+        поэтому она не сможет
+        уйти за нижнюю границу.
+      */
+
+      const rightY =
+        data.players[1] *
+        scaleY;
+
+      const paddleVisualHeight =
+        PADDLE_HEIGHT * scaleY;
+
+
+      let rightTop =
+        rightY -
+        paddleVisualHeight / 2;
+
+
+      /*
+        Дополнительная защита
+        на клиенте.
+      */
+
+      rightTop =
+        Math.max(
+          0,
+          Math.min(
+            rect.height -
+            paddleVisualHeight,
+            rightTop
+          )
+        );
+
+
+      paddle2.style.top =
+        rightTop + "px";
+
+
+      /*
+        Мяч
+      */
+
+      const ballX =
+        data.ball.x *
+        scaleX;
+
+      const ballY =
+        data.ball.y *
+        scaleY;
+
+
+      ball.style.left =
+        (ballX -
+        BALL_RADIUS * scaleX) +
+        "px";
+
+
+      ball.style.top =
+        (ballY -
+        BALL_RADIUS * scaleY) +
+        "px";
+
+
+      /*
+        Информация о подаче
+      */
+
+      if (data.servingPlayer === myPlayer) {
+
+        if (data.ballMoving) {
+
+          serveInfo.textContent =
+            "Играем";
+
+        } else {
+
+          serveInfo.textContent =
+            "Твоя подача — нажми на поле";
+
+        }
+
+      } else {
+
+        if (data.ballMoving) {
+
+          serveInfo.textContent =
+            "Играем";
+
+        } else {
+
+          serveInfo.textContent =
+            "Подача соперника";
+
+        }
+
+      }
+
+    }
+
+
+    /*
+      Создать комнату
+    */
+
+    createBtn.addEventListener(
+      "click",
+      () => {
+
+        connect();
+
+        const wait =
+          setInterval(() => {
+
+            if (
+              ws &&
+              ws.readyState === WebSocket.OPEN
+            ) {
+
+              clearInterval(wait);
+
+              ws.send(
+                JSON.stringify({
+                  type: "create"
+                })
+              );
+
+            }
+
+          }, 50);
+
+      }
     );
 
-    return;
-  }
 
-};
+    /*
+      Войти в комнату
+    */
 
+    joinBtn.addEventListener(
+      "click",
+      () => {
 
-// ТЕКСТ ПОДАЧИ
+        const code =
+          roomInput.value
+            .trim()
+            .toUpperCase();
 
-function updateServeText(
-  servingPlayer,
-  moving
-) {
+        if (!code) {
 
-  if (moving) {
+          alert(
+            "Введите код комнаты"
+          );
 
-    serveInfo.innerText =
-      "❤️ Сердечко летит!";
-
-    return;
-  }
-
-
-  if (servingPlayer === myPlayer) {
-
-    serveInfo.innerText =
-      "Твоя подача ❤️ Нажми на экран!";
-
-  } else {
-
-    serveInfo.innerText =
-      "Подача соперника...";
-
-  }
-
-}
+          return;
+        }
 
 
-// СОЗДАТЬ КОМНАТУ
-
-function createRoom() {
-
-  socket.send(
-    JSON.stringify({
-      type: "create"
-    })
-  );
-
-}
+        connect();
 
 
-// ВОЙТИ В КОМНАТУ
+        const wait =
+          setInterval(() => {
 
-function joinRoom() {
+            if (
+              ws &&
+              ws.readyState === WebSocket.OPEN
+            ) {
 
-  const input =
-    document.getElementById(
-      "roomInput"
+              clearInterval(wait);
+
+              ws.send(
+                JSON.stringify({
+                  type: "join",
+                  room: code
+                })
+              );
+
+            }
+
+          }, 50);
+
+      }
     );
 
-  const code =
-    input.value.trim();
 
-  if (!code) return;
+    /*
+      Отправка положения ракетки
+    */
 
-  roomId = code;
+    function movePaddle(clientY) {
 
-  socket.send(
-    JSON.stringify({
-      type: "join",
-      roomId: code
-    })
-  );
-
-}
+      if (
+        !ws ||
+        ws.readyState !== WebSocket.OPEN
+      ) {
+        return;
+      }
 
 
-// ДВИЖЕНИЕ РАКЕТКИ
-
-function movePaddle(clientY) {
-
-  if (myPlayer === null) return;
+      const rect =
+        game.getBoundingClientRect();
 
 
-  const rect =
-    game.getBoundingClientRect();
+      let y =
+        (clientY - rect.top) /
+        rect.height *
+        SERVER_HEIGHT;
 
 
-  /*
-    Серверная высота = 500.
+      /*
+        Очень важное ограничение:
 
-    Переводим координату пальца
-    обратно в серверные координаты.
-  */
+        центр ракетки не может быть
+        выше 60 или ниже 440.
 
-  const scaleY =
-    rect.height / 500;
+        Поэтому вся ракетка
+        всегда остаётся внутри поля.
+      */
 
+      const minY =
+        PADDLE_HEIGHT / 2;
 
-  let y =
-    (clientY - rect.top) /
-    scaleY;
-
-
-  y = Math.max(
-    60,
-    Math.min(440, y)
-  );
+      const maxY =
+        SERVER_HEIGHT -
+        PADDLE_HEIGHT / 2;
 
 
-  socket.send(
-    JSON.stringify({
-      type: "move",
-      y: y
-    })
-  );
-
-}
+      y =
+        Math.max(
+          minY,
+          Math.min(maxY, y)
+        );
 
 
-// ПОДАЧА
+      ws.send(
+        JSON.stringify({
+          type: "move",
+          y: y
+        })
+      );
 
-function serve() {
-
-  if (myPlayer === null) return;
-
-  socket.send(
-    JSON.stringify({
-      type: "serve"
-    })
-  );
-
-}
+    }
 
 
-// ТЕЛЕФОН
+    /*
+      Touch — телефон
+    */
 
-game.addEventListener(
-  "touchmove",
-  event => {
+    game.addEventListener(
+      "touchmove",
+      (event) => {
 
-    event.preventDefault();
+        event.preventDefault();
 
-    movePaddle(
-      event.touches[0].clientY
+        if (!event.touches.length) {
+          return;
+        }
+
+        movePaddle(
+          event.touches[0].clientY
+        );
+
+      },
+      {
+        passive: false
+      }
     );
 
-  },
-  {
-    passive: false
-  }
-);
+
+    /*
+      Первое касание:
+      двигаем ракетку и одновременно
+      пытаемся сделать подачу.
+    */
+
+    game.addEventListener(
+      "touchstart",
+      (event) => {
+
+        event.preventDefault();
+
+        if (!event.touches.length) {
+          return;
+        }
 
 
-game.addEventListener(
-  "touchstart",
-  event => {
+        const clientY =
+          event.touches[0].clientY;
 
-    event.preventDefault();
 
-    movePaddle(
-      event.touches[0].clientY
+        movePaddle(clientY);
+
+
+        if (
+          ws &&
+          ws.readyState === WebSocket.OPEN
+        ) {
+
+          ws.send(
+            JSON.stringify({
+              type: "serve"
+            })
+          );
+
+        }
+
+      },
+      {
+        passive: false
+      }
     );
 
-    serve();
 
-  },
-  {
-    passive: false
-  }
-);
+    /*
+      Компьютер / мышка
+    */
 
+    game.addEventListener(
+      "mousemove",
+      (event) => {
 
-// КОМПЬЮТЕР
+        movePaddle(
+          event.clientY
+        );
 
-game.addEventListener(
-  "mousemove",
-  event => {
-
-    movePaddle(
-      event.clientY
+      }
     );
 
-  }
-);
+
+    /*
+      Клик — подача
+    */
+
+    game.addEventListener(
+      "click",
+      () => {
+
+        if (
+          ws &&
+          ws.readyState === WebSocket.OPEN
+        ) {
+
+          ws.send(
+            JSON.stringify({
+              type: "serve"
+            })
+          );
+
+        }
+
+      }
+    );
 
 
-game.addEventListener(
-  "click",
-  () => {
+    /*
+      Играть снова
+    */
 
-    serve();
+    restart.addEventListener(
+      "click",
+      () => {
 
-  }
-);
+        message.style.display =
+          "none";
 
 
-// НОВАЯ ИГРА
+        if (
+          ws &&
+          ws.readyState === WebSocket.OPEN
+        ) {
 
-function rematch() {
+          ws.send(
+            JSON.stringify({
+              type: "rematch"
+            })
+          );
 
-  socket.send(
-    JSON.stringify({
-      type: "rematch"
-    })
-  );
+        }
 
-}
+      }
+    );
 
-</script>
-
+  </script>
 
 </body>
-
 </html>
