@@ -11,31 +11,30 @@ app.use(express.static("public"));
 
 const rooms = new Map();
 
-function newRoom() {
+function createRoom() {
   return {
     players: [],
     score: [0, 0],
+    gameOver: false,
     ball: {
       x: 400,
       y: 250,
       vx: 5,
       vy: 3
-    },
-    gameOver: false
+    }
   };
 }
 
 function resetBall(room) {
   room.ball.x = 400;
   room.ball.y = 250;
-
   room.ball.vx = Math.random() > 0.5 ? 5 : -5;
-  room.ball.vy = (Math.random() > 0.5 ? 1 : -1) * 3;
+  room.ball.vy = Math.random() > 0.5 ? 3 : -3;
 }
 
-function send(player, data) {
-  if (player.readyState === WebSocket.OPEN) {
-    player.send(JSON.stringify(data));
+function send(ws, data) {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(data));
   }
 }
 
@@ -44,38 +43,45 @@ function broadcast(room, data) {
 }
 
 wss.on("connection", ws => {
-  ws.on("message", message => {
+
+  ws.y = 250;
+  ws.player = null;
+  ws.roomId = null;
+
+  ws.on("message", raw => {
+
     let data;
 
     try {
-      data = JSON.parse(message);
+      data = JSON.parse(raw);
     } catch {
       return;
     }
 
-    // Создание комнаты
+    // СОЗДАТЬ КОМНАТУ
     if (data.type === "create") {
-      const roomId = crypto.randomBytes(3).toString("hex");
 
-      const room = newRoom();
-      room.players.push(ws);
+      const roomId = crypto.randomBytes(3).toString("hex");
+      const room = createRoom();
 
       ws.roomId = roomId;
       ws.player = 0;
 
+      room.players.push(ws);
       rooms.set(roomId, room);
 
       send(ws, {
         type: "roomCreated",
-        roomId,
+        roomId: roomId,
         player: 0
       });
 
       return;
     }
 
-    // Подключение к комнате
+    // ВОЙТИ В КОМНАТУ
     if (data.type === "join") {
+
       const room = rooms.get(data.roomId);
 
       if (!room) {
@@ -94,34 +100,44 @@ wss.on("connection", ws => {
         return;
       }
 
-      room.players.push(ws);
-
       ws.roomId = data.roomId;
       ws.player = 1;
+      ws.y = 250;
 
-      broadcast(room, {
-        type: "start"
+      room.players.push(ws);
+
+      // КАЖДОМУ ИГРОКУ ОТПРАВЛЯЕМ ЕГО НОМЕР
+      room.players.forEach(player => {
+        send(player, {
+          type: "start",
+          player: player.player
+        });
       });
 
       return;
     }
 
-    // Движение игрока
+    // ДВИЖЕНИЕ
     if (data.type === "move") {
+
       const room = rooms.get(ws.roomId);
 
       if (!room || room.gameOver) return;
 
-      ws.y = Math.max(
-        50,
-        Math.min(450, Number(data.y) || 250)
-      );
+      let y = Number(data.y);
+
+      if (!Number.isFinite(y)) return;
+
+      y = Math.max(60, Math.min(440, y));
+
+      ws.y = y;
 
       return;
     }
 
-    // Начать новую игру
+    // НОВАЯ ИГРА
     if (data.type === "rematch") {
+
       const room = rooms.get(ws.roomId);
 
       if (!room || room.players.length !== 2) return;
@@ -129,9 +145,8 @@ wss.on("connection", ws => {
       room.score = [0, 0];
       room.gameOver = false;
 
-      room.players.forEach(player => {
-        player.y = 250;
-      });
+      room.players[0].y = 250;
+      room.players[1].y = 250;
 
       resetBall(room);
 
@@ -145,11 +160,12 @@ wss.on("connection", ws => {
   });
 
   ws.on("close", () => {
+
     const room = rooms.get(ws.roomId);
 
     if (!room) return;
 
-    room.players = room.players.filter(player => player !== ws);
+    room.players = room.players.filter(p => p !== ws);
 
     if (room.players.length === 0) {
       rooms.delete(ws.roomId);
@@ -157,58 +173,59 @@ wss.on("connection", ws => {
   });
 });
 
-// Игровой цикл
+
+// ИГРОВОЙ ЦИКЛ
 setInterval(() => {
+
   for (const room of rooms.values()) {
+
     if (room.players.length !== 2) continue;
     if (room.gameOver) continue;
-
-    const ball = room.ball;
-
-    // Движение мяча
-    ball.x += ball.vx;
-    ball.y += ball.vy;
-
-    // Верх / низ
-    if (ball.y <= 20 || ball.y >= 480) {
-      ball.vy *= -1;
-    }
 
     const left = room.players[0];
     const right = room.players[1];
 
-    const leftY = left.y || 250;
-    const rightY = right.y || 250;
+    const ball = room.ball;
 
-    // Левая ракетка
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    // Верх и низ
+    if (ball.y <= 15 || ball.y >= 485) {
+      ball.vy *= -1;
+    }
+
+    // ЛЕВАЯ РАКЕТКА
     if (
+      ball.vx < 0 &&
       ball.x <= 45 &&
       ball.x >= 25 &&
-      ball.y >= leftY - 60 &&
-      ball.y <= leftY + 60 &&
-      ball.vx < 0
+      ball.y >= left.y - 65 &&
+      ball.y <= left.y + 65
     ) {
-      ball.vx *= -1;
       ball.x = 45;
+      ball.vx = Math.abs(ball.vx) + 0.15;
     }
 
-    // Правая ракетка
+    // ПРАВАЯ РАКЕТКА
     if (
+      ball.vx > 0 &&
       ball.x >= 755 &&
       ball.x <= 775 &&
-      ball.y >= rightY - 60 &&
-      ball.y <= rightY + 60 &&
-      ball.vx > 0
+      ball.y >= right.y - 65 &&
+      ball.y <= right.y + 65
     ) {
-      ball.vx *= -1;
       ball.x = 755;
+      ball.vx = -(Math.abs(ball.vx) + 0.15);
     }
 
-    // Гол правого игрока
-    if (ball.x < 0) {
+    // ЛЕВЫЙ ГОЛ
+    if (ball.x < -20) {
+
       room.score[1]++;
 
       if (room.score[1] >= 11) {
+
         room.gameOver = true;
 
         broadcast(room, {
@@ -216,16 +233,19 @@ setInterval(() => {
           winner: 1,
           score: room.score
         });
+
       } else {
         resetBall(room);
       }
     }
 
-    // Гол левого игрока
-    if (ball.x > 800) {
+    // ПРАВЫЙ ГОЛ
+    if (ball.x > 820) {
+
       room.score[0]++;
 
       if (room.score[0] >= 11) {
+
         room.gameOver = true;
 
         broadcast(room, {
@@ -233,26 +253,29 @@ setInterval(() => {
           winner: 0,
           score: room.score
         });
+
       } else {
         resetBall(room);
       }
     }
 
-    // Отправляем состояние игрокам
+    // СОСТОЯНИЕ ИГРЫ
     broadcast(room, {
       type: "state",
-      ball,
+      ball: ball,
       players: [
-        left.y || 250,
-        right.y || 250
+        left.y,
+        right.y
       ],
       score: room.score
     });
   }
+
 }, 1000 / 60);
+
 
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+  console.log("Server started on port " + PORT);
 });
