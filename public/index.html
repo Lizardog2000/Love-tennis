@@ -1,490 +1,550 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Heart Pong ❤️</title>
+<meta charset="UTF-8">
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
 
-    body {
-      margin: 0;
-      background: #111;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      overflow: hidden;
-    }
+<title>Heart Pong ❤️</title>
 
-    h1 {
-      margin: 15px 0;
-    }
+<style>
 
-    #menu {
-      margin-top: 30px;
-    }
+* {
+  box-sizing: border-box;
+}
 
-    input {
-      padding: 12px;
-      font-size: 16px;
-      width: 230px;
-      border-radius: 8px;
-      border: none;
-    }
+body {
+  margin: 0;
+  background: #111;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
 
-    button {
-      padding: 12px 18px;
-      margin: 6px;
-      border: none;
-      border-radius: 8px;
-      background: #ff4f81;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-    }
+h1 {
+  margin: 15px;
+}
 
-    button:hover {
-      background: #ff2f68;
-    }
+button {
+  padding: 12px 20px;
+  margin: 6px;
+  border: 0;
+  border-radius: 10px;
+  background: #ff4f81;
+  color: white;
+  font-size: 16px;
+}
 
-    #game {
-      display: none;
-      position: relative;
-      width: 800px;
-      max-width: 100vw;
-      height: 500px;
-      margin: auto;
-      background: #050505;
-      border: 3px solid white;
-      overflow: hidden;
-    }
+input {
+  padding: 12px;
+  border-radius: 8px;
+  border: 0;
+  font-size: 16px;
+  width: 220px;
+}
 
-    .paddle {
-      position: absolute;
-      width: 15px;
-      height: 120px;
-      background: white;
-      border-radius: 10px;
-    }
+#game {
+  display: none;
+  position: relative;
 
-    #paddle1 {
-      left: 15px;
-      top: 190px;
-    }
+  width: 800px;
+  height: 500px;
 
-    #paddle2 {
-      right: 15px;
-      top: 190px;
-    }
+  max-width: 100vw;
+  margin: auto;
 
-    #ball {
-      position: absolute;
-      width: 30px;
-      height: 30px;
-      background: #ff4f81;
-      transform: rotate(-45deg);
-      left: 385px;
-      top: 235px;
-    }
+  background: #050505;
+  border: 3px solid white;
 
-    #ball::before,
-    #ball::after {
-      content: "";
-      position: absolute;
-      width: 30px;
-      height: 30px;
-      background: #ff4f81;
-      border-radius: 50%;
-    }
+  overflow: hidden;
 
-    #ball::before {
-      top: -15px;
-      left: 0;
-    }
+  touch-action: none;
+}
 
-    #ball::after {
-      left: 15px;
-      top: 0;
-    }
+.paddle {
+  position: absolute;
 
-    #score {
-      font-size: 28px;
-      margin: 10px;
-    }
+  width: 16px;
+  height: 120px;
 
-    #roomInfo {
-      margin: 10px;
-      font-size: 14px;
-    }
+  background: white;
 
-    #result {
-      display: none;
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.88);
-      z-index: 10;
+  border-radius: 10px;
+}
 
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-    }
+#paddle1 {
+  left: 15px;
+  top: 190px;
+}
 
-    #resultText {
-      font-size: 32px;
-      font-weight: bold;
-      margin: 20px;
-    }
+#paddle2 {
+  right: 15px;
+  top: 190px;
+}
 
-    #finalScore {
-      font-size: 24px;
-      margin-bottom: 15px;
-    }
-  </style>
+#ball {
+  position: absolute;
+
+  width: 28px;
+  height: 28px;
+
+  background: #ff4f81;
+
+  transform: rotate(-45deg);
+
+  left: 386px;
+  top: 236px;
+}
+
+#ball::before,
+#ball::after {
+
+  content: "";
+
+  position: absolute;
+
+  width: 28px;
+  height: 28px;
+
+  background: #ff4f81;
+
+  border-radius: 50%;
+}
+
+#ball::before {
+  top: -14px;
+  left: 0;
+}
+
+#ball::after {
+  top: 0;
+  left: 14px;
+}
+
+#score {
+  font-size: 28px;
+  margin: 10px;
+}
+
+#roomInfo {
+  margin: 10px;
+}
+
+#result {
+
+  display: none;
+
+  position: absolute;
+
+  inset: 0;
+
+  background: rgba(0,0,0,0.9);
+
+  z-index: 10;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-direction: column;
+}
+
+#resultText {
+  font-size: 30px;
+  font-weight: bold;
+
+  padding: 20px;
+}
+
+#finalScore {
+  font-size: 24px;
+}
+
+</style>
+
 </head>
 
 <body>
 
-  <h1>❤️ Heart Pong</h1>
+<h1>❤️ Heart Pong</h1>
 
-  <div id="menu">
+<div id="menu">
 
-    <button onclick="createRoom()">
-      Создать игру
+  <button onclick="createRoom()">
+    Создать игру
+  </button>
+
+  <br>
+
+  <input
+    id="roomInput"
+    placeholder="Код комнаты"
+  >
+
+  <button onclick="joinRoom()">
+    Войти
+  </button>
+
+  <p id="status">
+    Создай комнату или введи код друга
+  </p>
+
+</div>
+
+<div id="roomInfo"></div>
+
+<div id="score">
+  0 : 0
+</div>
+
+
+<div id="game">
+
+  <div id="paddle1" class="paddle"></div>
+
+  <div id="paddle2" class="paddle"></div>
+
+  <div id="ball"></div>
+
+
+  <div id="result">
+
+    <div id="resultText"></div>
+
+    <div id="finalScore"></div>
+
+    <button onclick="rematch()">
+      Играть снова ❤️
     </button>
 
-    <br>
-
-    <input
-      id="roomInput"
-      placeholder="Код комнаты"
-    >
-
-    <button onclick="joinRoom()">
-      Войти
-    </button>
-
-    <p id="status">
-      Создай комнату или введи код друга
-    </p>
-
   </div>
 
-  <div id="roomInfo"></div>
+</div>
 
-  <div id="score">
-    0 : 0
-  </div>
 
-  <div id="game">
+<script>
 
-    <div id="paddle1" class="paddle"></div>
-    <div id="paddle2" class="paddle"></div>
+const socket = new WebSocket(
+  location.protocol === "https:"
+    ? "wss://" + location.host
+    : "ws://" + location.host
+);
 
-    <div id="ball"></div>
 
-    <div id="result">
+let myPlayer = null;
+let roomId = null;
 
-      <div id="resultText"></div>
 
-      <div id="finalScore"></div>
+const menu =
+  document.getElementById("menu");
 
-      <button onclick="rematch()">
-        Играть снова ❤️
-      </button>
+const game =
+  document.getElementById("game");
 
-    </div>
+const ball =
+  document.getElementById("ball");
 
-  </div>
+const paddle1 =
+  document.getElementById("paddle1");
 
-  <script>
+const paddle2 =
+  document.getElementById("paddle2");
 
-    const socket = new WebSocket(
-      location.protocol === "https:"
-        ? "wss://" + location.host
-        : "ws://" + location.host
+const score =
+  document.getElementById("score");
+
+const status =
+  document.getElementById("status");
+
+const roomInfo =
+  document.getElementById("roomInfo");
+
+const result =
+  document.getElementById("result");
+
+const resultText =
+  document.getElementById("resultText");
+
+const finalScore =
+  document.getElementById("finalScore");
+
+
+// ПОДКЛЮЧЕНИЕ
+socket.onopen = () => {
+
+  const params =
+    new URLSearchParams(location.search);
+
+  const room =
+    params.get("room");
+
+  if (room) {
+
+    document.getElementById(
+      "roomInput"
+    ).value = room;
+  }
+};
+
+
+// ПОЛУЧЕНИЕ ДАННЫХ
+socket.onmessage = event => {
+
+  const data =
+    JSON.parse(event.data);
+
+
+  // СОЗДАЛИ КОМНАТУ
+  if (data.type === "roomCreated") {
+
+    roomId = data.roomId;
+
+    myPlayer = data.player;
+
+    roomInfo.innerText =
+      "Код комнаты: " + roomId;
+
+    status.innerText =
+      "Отправь код другу ❤️";
+
+    history.replaceState(
+      null,
+      "",
+      "?room=" + roomId
     );
 
-    let myPlayer = null;
-    let roomId = null;
+    return;
+  }
 
-    const menu = document.getElementById("menu");
-    const game = document.getElementById("game");
 
-    const ball = document.getElementById("ball");
+  // ИГРА НАЧАЛАСЬ
+  if (data.type === "start") {
 
-    const paddle1 = document.getElementById("paddle1");
-    const paddle2 = document.getElementById("paddle2");
+    myPlayer = data.player;
 
-    const scoreElement = document.getElementById("score");
+    menu.style.display = "none";
 
-    const statusElement = document.getElementById("status");
+    game.style.display = "block";
 
-    const roomInfo = document.getElementById("roomInfo");
+    status.innerText =
+      "Игра началась!";
 
-    const result = document.getElementById("result");
-    const resultText = document.getElementById("resultText");
-    const finalScore = document.getElementById("finalScore");
+    return;
+  }
 
 
-    socket.onopen = () => {
+  // ОШИБКА
+  if (data.type === "error") {
 
-      const params = new URLSearchParams(
-        location.search
-      );
+    status.innerText =
+      data.message;
 
-      const room = params.get("room");
+    return;
+  }
 
-      if (room) {
-        document.getElementById("roomInput").value = room;
-      }
 
-    };
+  // СОСТОЯНИЕ ИГРЫ
+  if (data.type === "state") {
 
+    menu.style.display = "none";
 
-    socket.onmessage = event => {
+    game.style.display = "block";
 
-      const data = JSON.parse(event.data);
 
+    ball.style.left =
+      (data.ball.x - 14) + "px";
 
-      // Комната создана
-      if (data.type === "roomCreated") {
+    ball.style.top =
+      (data.ball.y - 14) + "px";
 
-        roomId = data.roomId;
-        myPlayer = data.player;
 
-        roomInfo.innerText =
-          "Код комнаты: " + roomId;
+    paddle1.style.top =
+      (data.players[0] - 60) + "px";
 
-        statusElement.innerText =
-          "Отправь этот код другу ❤️";
+    paddle2.style.top =
+      (data.players[1] - 60) + "px";
 
-        history.replaceState(
-          null,
-          "",
-          "?room=" + roomId
-        );
 
-        return;
-      }
+    score.innerText =
+      data.score[0] +
+      " : " +
+      data.score[1];
 
+    return;
+  }
 
-      // Игра началась
-      if (data.type === "start") {
 
-        menu.style.display = "none";
-        game.style.display = "block";
+  // КТО-ТО ВЫИГРАЛ
+  if (data.type === "gameOver") {
 
-        statusElement.innerText =
-          "Игра началась!";
+    score.innerText =
+      data.score[0] +
+      " : " +
+      data.score[1];
 
-        return;
-      }
+    finalScore.innerText =
+      "Счёт: " +
+      data.score[0] +
+      " : " +
+      data.score[1];
 
 
-      // Ошибка
-      if (data.type === "error") {
-
-        statusElement.innerText =
-          data.message;
-
-        return;
-      }
-
-
-      // Состояние игры
-      if (data.type === "state") {
-
-        menu.style.display = "none";
-        game.style.display = "block";
-
-        const b = data.ball;
-
-        ball.style.left =
-          (b.x - 15) + "px";
-
-        ball.style.top =
-          (b.y - 15) + "px";
-
-
-        paddle1.style.top =
-          (data.players[0] - 60) + "px";
-
-        paddle2.style.top =
-          (data.players[1] - 60) + "px";
-
-
-        scoreElement.innerText =
-          data.score[0] +
-          " : " +
-          data.score[1];
-
-        return;
-      }
-
-
-      // Конец игры
-      if (data.type === "gameOver") {
-
-        scoreElement.innerText =
-          data.score[0] +
-          " : " +
-          data.score[1];
-
-        finalScore.innerText =
-          "Счёт: " +
-          data.score[0] +
-          " : " +
-          data.score[1];
-
-
-        if (data.winner === myPlayer) {
-
-          resultText.innerText =
-            "Поздравляю любимка!";
-
-        } else {
-
-          resultText.innerText =
-            "В следующий раз обязательно получится!";
-
-        }
-
-
-        result.style.display =
-          "flex";
-
-        return;
-      }
-
-
-      // Новая игра
-      if (data.type === "restart") {
-
-        result.style.display =
-          "none";
-
-        scoreElement.innerText =
-          "0 : 0";
-
-        return;
-      }
-
-    };
-
-
-    function createRoom() {
-
-      socket.send(
-        JSON.stringify({
-          type: "create"
-        })
-      );
-
-    }
-
-
-    function joinRoom() {
-
-      const input =
-        document.getElementById("roomInput");
-
-      const code =
-        input.value.trim();
-
-      if (!code) return;
-
-      roomId = code;
-
-      socket.send(
-        JSON.stringify({
-          type: "join",
-          roomId: code
-        })
-      );
-
-    }
-
-
-    function rematch() {
-
-      socket.send(
-        JSON.stringify({
-          type: "rematch"
-        })
-      );
+    if (data.winner === myPlayer) {
 
       resultText.innerText =
-        "Ждём соперника...";
+        "Поздравляю любимка!";
+
+    } else {
+
+      resultText.innerText =
+        "В следующий раз обязательно получится!";
 
     }
 
 
-    // Управление мышкой
-    document.addEventListener(
-      "mousemove",
-      event => {
+    result.style.display =
+      "flex";
 
-        if (myPlayer === null) return;
+    return;
+  }
 
-        const rect =
-          game.getBoundingClientRect();
 
-        let y =
-          event.clientY - rect.top;
+  // НОВАЯ ИГРА
+  if (data.type === "restart") {
 
-        y = Math.max(
-          60,
-          Math.min(440, y)
-        );
+    result.style.display =
+      "none";
 
-        socket.send(
-          JSON.stringify({
-            type: "move",
-            y: y
-          })
-        );
+    score.innerText =
+      "0 : 0";
 
-      }
+    return;
+  }
+
+};
+
+
+// СОЗДАТЬ КОМНАТУ
+function createRoom() {
+
+  socket.send(
+    JSON.stringify({
+      type: "create"
+    })
+  );
+
+}
+
+
+// ВОЙТИ
+function joinRoom() {
+
+  const input =
+    document.getElementById(
+      "roomInput"
     );
 
+  const code =
+    input.value.trim();
 
-    // Управление пальцем на телефоне
-    game.addEventListener(
-      "touchmove",
-      event => {
+  if (!code) return;
 
-        event.preventDefault();
+  roomId = code;
 
-        if (myPlayer === null) return;
+  socket.send(
+    JSON.stringify({
+      type: "join",
+      roomId: code
+    })
+  );
 
-        const rect =
-          game.getBoundingClientRect();
+}
 
-        let y =
-          event.touches[0].clientY -
-          rect.top;
 
-        y = Math.max(
-          60,
-          Math.min(440, y)
-        );
+// НОВАЯ ИГРА
+function rematch() {
 
-        socket.send(
-          JSON.stringify({
-            type: "move",
-            y: y
-          })
-        );
+  socket.send(
+    JSON.stringify({
+      type: "rematch"
+    })
+  );
 
-      },
-      { passive: false }
+  resultText.innerText =
+    "Новая игра...";
+
+}
+
+
+// УПРАВЛЕНИЕ
+function movePaddle(clientY) {
+
+  if (myPlayer === null) return;
+
+  const rect =
+    game.getBoundingClientRect();
+
+  let y =
+    clientY - rect.top;
+
+
+  // Учитываем масштаб игры на телефоне
+  const scale =
+    rect.height / 500;
+
+  y =
+    y / scale;
+
+
+  y = Math.max(
+    60,
+    Math.min(440, y)
+  );
+
+
+  socket.send(
+    JSON.stringify({
+      type: "move",
+      y: y
+    })
+  );
+
+}
+
+
+// ПК
+document.addEventListener(
+  "mousemove",
+  event => {
+
+    if (
+      game.style.display !== "none"
+    ) {
+      movePaddle(event.clientY);
+    }
+
+  }
+);
+
+
+// ТЕЛЕФОН
+game.addEventListener(
+  "touchmove",
+  event => {
+
+    event.preventDefault();
+
+    movePaddle(
+      event.touches[0].clientY
     );
 
-  </script>
+  },
+  { passive: false }
+);
+
+</script>
 
 </body>
 </html>
