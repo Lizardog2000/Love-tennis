@@ -23,14 +23,9 @@ function createRoom() {
     score: [0, 0],
     gameOver: false,
 
-    // 0 = первый игрок, 1 = второй
     servingPlayer: 0,
-
-    // Сколько подач уже сделал текущий игрок
     servesDone: 0,
 
-    // false = сердечко лежит на ракетке
-    // true = сердечко летит
     ballMoving: false,
 
     ball: {
@@ -74,37 +69,22 @@ function putBallOnPaddle(room) {
 }
 
 function startServe(room) {
+  room.ballMoving = true;
+
   const direction =
     room.servingPlayer === 0 ? 1 : -1;
 
-  room.ballMoving = true;
-
   room.ball.vx = direction * 7;
 
-  // Всегда немного вверх/вниз,
-  // но без случайного направления.
   room.ball.vy = -2.5;
 }
 
-function nextServe(room) {
-  room.servesDone++;
-
-  // После двух подач меняем игрока
-  if (room.servesDone >= 2) {
-    room.servesDone = 0;
-    room.servingPlayer =
-      room.servingPlayer === 0 ? 1 : 0;
-  }
-
-  putBallOnPaddle(room);
-}
-
 function resetAfterPoint(room) {
-  // После очка подаёт следующий по очереди игрок
   room.servesDone++;
 
   if (room.servesDone >= 2) {
     room.servesDone = 0;
+
     room.servingPlayer =
       room.servingPlayer === 0 ? 1 : 0;
   }
@@ -128,10 +108,7 @@ wss.on("connection", ws => {
       return;
     }
 
-    // =========================
     // СОЗДАНИЕ КОМНАТЫ
-    // =========================
-
     if (data.type === "create") {
 
       const roomId =
@@ -156,10 +133,7 @@ wss.on("connection", ws => {
       return;
     }
 
-    // =========================
-    // ПОДКЛЮЧЕНИЕ
-    // =========================
-
+    // ПОДКЛЮЧЕНИЕ В КОМНАТУ
     if (data.type === "join") {
 
       const room = rooms.get(data.roomId);
@@ -188,8 +162,6 @@ wss.on("connection", ws => {
 
       room.players.push(ws);
 
-      // Сердечко появляется
-      // на первой ракетке
       putBallOnPaddle(room);
 
       room.players.forEach(player => {
@@ -206,10 +178,7 @@ wss.on("connection", ws => {
       return;
     }
 
-    // =========================
     // ДВИЖЕНИЕ РАКЕТКИ
-    // =========================
-
     if (data.type === "move") {
 
       const room = rooms.get(ws.roomId);
@@ -230,8 +199,6 @@ wss.on("connection", ws => {
 
       ws.y = y;
 
-      // Если сердечко лежит на ракетке,
-      // оно двигается вместе с ней
       if (
         !room.ballMoving &&
         room.servingPlayer === ws.player
@@ -242,10 +209,7 @@ wss.on("connection", ws => {
       return;
     }
 
-    // =========================
     // ПОДАЧА
-    // =========================
-
     if (data.type === "serve") {
 
       const room = rooms.get(ws.roomId);
@@ -263,10 +227,7 @@ wss.on("connection", ws => {
       return;
     }
 
-    // =========================
     // НОВАЯ ИГРА
-    // =========================
-
     if (data.type === "rematch") {
 
       const room = rooms.get(ws.roomId);
@@ -276,6 +237,7 @@ wss.on("connection", ws => {
       }
 
       room.score = [0, 0];
+
       room.gameOver = false;
 
       room.servingPlayer = 0;
@@ -303,19 +265,19 @@ wss.on("connection", ws => {
     if (!room) return;
 
     room.players =
-      room.players.filter(p => p !== ws);
+      room.players.filter(
+        player => player !== ws
+      );
 
     if (room.players.length === 0) {
       rooms.delete(ws.roomId);
     }
   });
+
 });
 
 
-// =========================
 // ИГРОВОЙ ЦИКЛ
-// =========================
-
 setInterval(() => {
 
   for (const room of rooms.values()) {
@@ -329,58 +291,62 @@ setInterval(() => {
 
     const ball = room.ball;
 
-    // =========================
-    // СЕРДЕЧКО НА РАКЕТКЕ
-    // =========================
 
+    // СЕРДЕЧКО ЛЕЖИТ НА РАКЕТКЕ
     if (!room.ballMoving) {
 
       putBallOnPaddle(room);
 
       broadcast(room, {
         type: "state",
+
         ball: ball,
+
         players: [
           left.y,
           right.y
         ],
+
         score: room.score,
-        servingPlayer: room.servingPlayer,
+
+        servingPlayer:
+          room.servingPlayer,
+
         ballMoving: false,
-        servesDone: room.servesDone
+
+        servesDone:
+          room.servesDone
       });
 
       continue;
     }
 
-    // =========================
-    // ДВИЖЕНИЕ
-    // =========================
 
+    // ДВИЖЕНИЕ
     ball.x += ball.vx;
     ball.y += ball.vy;
 
 
-    // Верх
+    // ВЕРХНЯЯ СТЕНА
     if (ball.y - BALL_RADIUS <= 0) {
 
       ball.y = BALL_RADIUS;
+
       ball.vy *= -1;
     }
 
 
-    // Низ
+    // НИЖНЯЯ СТЕНА
     if (ball.y + BALL_RADIUS >= HEIGHT) {
 
-      ball.y = HEIGHT - BALL_RADIUS;
+      ball.y =
+        HEIGHT - BALL_RADIUS;
+
       ball.vy *= -1;
     }
 
 
-    // =========================
     // ЛЕВАЯ РАКЕТКА
-    // =========================
-
     const leftX = 15;
     const leftRight = 31;
 
@@ -392,12 +358,12 @@ setInterval(() => {
       ball.y <= left.y + PADDLE_HEIGHT / 2
     ) {
 
-      ball.x = leftRight + BALL_RADIUS;
+      ball.x =
+        leftRight + BALL_RADIUS;
 
-      ball.vx = Math.abs(ball.vx);
+      ball.vx =
+        Math.abs(ball.vx);
 
-      // Направление немного зависит
-      // от места попадания в ракетку
       const hit =
         (ball.y - left.y) /
         (PADDLE_HEIGHT / 2);
@@ -406,10 +372,7 @@ setInterval(() => {
     }
 
 
-    // =========================
     // ПРАВАЯ РАКЕТКА
-    // =========================
-
     const rightX = WIDTH - 31;
     const rightRight = WIDTH - 15;
 
@@ -421,9 +384,11 @@ setInterval(() => {
       ball.y <= right.y + PADDLE_HEIGHT / 2
     ) {
 
-      ball.x = rightX - BALL_RADIUS;
+      ball.x =
+        rightX - BALL_RADIUS;
 
-      ball.vx = -Math.abs(ball.vx);
+      ball.vx =
+        -Math.abs(ball.vx);
 
       const hit =
         (ball.y - right.y) /
@@ -433,13 +398,9 @@ setInterval(() => {
     }
 
 
-    // =========================
     // ГОЛ СЛЕВА
-    // =========================
-
     if (ball.x < -BALL_RADIUS) {
 
-      // Очко получает второй игрок
       room.score[1]++;
 
       if (room.score[1] >= 11) {
@@ -459,13 +420,9 @@ setInterval(() => {
     }
 
 
-    // =========================
     // ГОЛ СПРАВА
-    // =========================
-
     if (ball.x > WIDTH + BALL_RADIUS) {
 
-      // Очко получает первый игрок
       room.score[0]++;
 
       if (room.score[0] >= 11) {
@@ -484,10 +441,6 @@ setInterval(() => {
       }
     }
 
-
-    // =========================
-    // ОТПРАВКА СОСТОЯНИЯ
-    // =========================
 
     broadcast(room, {
       type: "state",
@@ -520,10 +473,7 @@ const PORT =
   process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-
   console.log(
-    "Heart Pong server started on port " +
-    PORT
+    "Heart Pong server started on port " + PORT
   );
-
 });
